@@ -8,17 +8,12 @@ import { roundTripPairs } from './test-marshal-capdata.js';
 
 const { freeze, isFrozen, create, prototype: objectPrototype } = Object;
 
-const harden = /** @type {import('ses').Harden & { isFake?: boolean }} */ (
-  // eslint-disable-next-line no-undef
-  global.harden
-);
-
 // this only includes the tests that do not use liveSlots
 
 /**
  * @param {import('../src/types.js').MakeMarshalOptions} [opts]
  */
-const makeTestMarshal = (opts = { errorTagging: 'off' }) =>
+export const makeSmallcapsTestMarshal = (opts = { errorTagging: 'off' }) =>
   makeMarshal(undefined, undefined, {
     serializeBodyFormat: 'smallcaps',
     marshalSaveError: _err => {},
@@ -26,19 +21,20 @@ const makeTestMarshal = (opts = { errorTagging: 'off' }) =>
   });
 
 test('smallcaps serialize unserialize round trip half pairs', t => {
-  const { serialize, unserialize } = makeTestMarshal();
+  const { toCapData, fromCapData } = makeSmallcapsTestMarshal();
   for (const [plain, _] of roundTripPairs) {
-    const { body } = serialize(plain);
-    const decoding = unserialize({ body, slots: [] });
+    const { body } = toCapData(plain);
+    const decoding = fromCapData({ body, slots: [] });
     t.deepEqual(decoding, plain);
     t.assert(isFrozen(decoding));
   }
 });
 
 test('smallcaps serialize static data', t => {
-  const { serialize } = makeTestMarshal();
-  const ser = val => serialize(val);
+  const { toCapData } = makeSmallcapsTestMarshal();
+  const ser = val => toCapData(val);
 
+  // @ts-ignore `isFake` purposely omitted from type
   if (!harden.isFake) {
     t.throws(() => ser([1, 2]), {
       message: /Cannot pass non-frozen objects like/,
@@ -60,8 +56,8 @@ test('smallcaps serialize static data', t => {
 });
 
 test('smallcaps unserialize static data', t => {
-  const { unserialize } = makeTestMarshal();
-  const uns = body => unserialize({ body, slots: [] });
+  const { fromCapData } = makeSmallcapsTestMarshal();
+  const uns = body => fromCapData({ body, slots: [] });
 
   // should be frozen
   const arr = uns('#[1,2]');
@@ -74,8 +70,8 @@ test('smallcaps unserialize static data', t => {
 });
 
 test('smallcaps serialize errors', t => {
-  const { serialize } = makeTestMarshal();
-  const ser = val => serialize(val);
+  const { toCapData } = makeSmallcapsTestMarshal();
+  const ser = val => toCapData(val);
 
   t.deepEqual(ser(harden(Error())), {
     body: '#{"#error":"","name":"Error"}',
@@ -106,38 +102,37 @@ test('smallcaps serialize errors', t => {
 
   // Extra properties
   const errExtra = Error('has extra properties');
-  // @ts-expect-error Check dynamic consequences of type violation
+  // @ts-ignore Check dynamic consequences of type violation
   errExtra.foo = [];
   freeze(errExtra);
   t.assert(isFrozen(errExtra));
+  // @ts-ignore `isFake` purposely omitted from type
   if (!harden.isFake) {
-    // @ts-expect-error Check dynamic consequences of type violation
+    // @ts-ignore Check dynamic consequences of type violation
     t.falsy(isFrozen(errExtra.foo));
   }
   t.deepEqual(ser(errExtra), {
     body: '#{"#error":"has extra properties","name":"Error"}',
     slots: [],
   });
+  // @ts-ignore `isFake` purposely omitted from type
   if (!harden.isFake) {
-    // @ts-expect-error Check dynamic consequences of type violation
+    // @ts-ignore Check dynamic consequences of type violation
     t.falsy(isFrozen(errExtra.foo));
   }
 
   // Bad prototype and bad "message" property
-  const nonErrorProto1 = harden({
-    __proto__: Error.prototype,
-    name: 'included',
-  });
-  const nonError1 = harden({ __proto__: nonErrorProto1, message: [] });
-  t.deepEqual(ser(nonError1), {
+  const nonErrorProto1 = { __proto__: Error.prototype, name: 'included' };
+  const nonError1 = { __proto__: nonErrorProto1, message: [] };
+  t.deepEqual(ser(harden(nonError1)), {
     body: '#{"#error":"","name":"included"}',
     slots: [],
   });
 });
 
 test('smallcaps unserialize errors', t => {
-  const { unserialize } = makeTestMarshal();
-  const uns = body => unserialize({ body, slots: [] });
+  const { fromCapData } = makeSmallcapsTestMarshal();
+  const uns = body => fromCapData({ body, slots: [] });
 
   const em1 = uns('#{"#error":"msg","name":"ReferenceError"}');
   t.truthy(em1 instanceof ReferenceError);
@@ -154,16 +149,16 @@ test('smallcaps unserialize errors', t => {
 });
 
 test('smallcaps mal-formed @qclass', t => {
-  const { unserialize } = makeTestMarshal();
-  const uns = body => unserialize({ body, slots: [] });
+  const { fromCapData } = makeSmallcapsTestMarshal();
+  const uns = body => fromCapData({ body, slots: [] });
   t.throws(() => uns('#{"#foo": 0}'), {
     message: 'Unrecognized record type "#foo": {"#foo":0}',
   });
 });
 
 test('smallcaps records', t => {
-  const fauxPresence = harden({});
-  const { serialize: ser, unserialize: unser } = makeMarshal(
+  const fauxPresence = Far('Alice', {});
+  const { toCapData: ser, fromCapData: unser } = makeMarshal(
     _val => 'slot',
     _slot => fauxPresence,
     {
@@ -191,6 +186,7 @@ test('smallcaps records', t => {
 
   // empty objects
 
+  // @ts-ignore `isFake` purposely omitted from type
   if (!harden.isFake) {
     // rejected because it is not hardened
     t.throws(
@@ -256,7 +252,7 @@ test('smallcaps records', t => {
  *  * `&` - promise
  */
 test('smallcaps encoding examples', t => {
-  const { serialize, unserialize } = makeMarshal(
+  const { toCapData, fromCapData } = makeMarshal(
     val => val,
     slot => slot,
     {
@@ -266,11 +262,11 @@ test('smallcaps encoding examples', t => {
   );
 
   const assertSer = (val, body, slots, message) =>
-    t.deepEqual(serialize(val), { body, slots }, message);
+    t.deepEqual(toCapData(val), { body, slots }, message);
 
   const assertRoundTrip = (val, body, slots, message) => {
     assertSer(val, body, slots, message);
-    const val2 = unserialize(harden({ body, slots }));
+    const val2 = fromCapData(harden({ body, slots }));
     assertSer(val2, body, slots, message);
     t.deepEqual(val, val2, message);
   };
@@ -404,7 +400,7 @@ test('smallcaps encoding examples', t => {
 
 test('smallcaps proto problems', t => {
   const exampleAlice = Far('Alice', {});
-  const { serialize: toSmallcaps, unserialize: fromSmallcaps } = makeMarshal(
+  const { toCapData: toSmallcaps, fromCapData: fromSmallcaps } = makeMarshal(
     _val => 'slot',
     _slot => exampleAlice,
     {
