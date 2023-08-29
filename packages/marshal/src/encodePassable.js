@@ -533,8 +533,8 @@ export const makeEncodePassable = (encodeOptions = {}) => {
     }
   };
   const encodePassable = xxx
-    ? // A leading "#" indicates the v2 encoding (with escaping in strings rather than arrays).
-      passable => `#${innerEncode(passable)}`
+    ? // A leading "~" indicates the v2 encoding (with escaping in strings rather than arrays).
+      passable => `~${innerEncode(passable)}`
     : innerEncode;
   return harden(encodePassable);
 };
@@ -621,8 +621,8 @@ export const makeDecodePassable = (decodeOptions = {}) => {
     return innerDecode;
   };
   const decodePassable = encoded => {
-    // A leading "#" indicates the v2 encoding (with escaping in strings rather than arrays).
-    if (encoded.startsWith('#')) {
+    // A leading "~" indicates the v2 encoding (with escaping in strings rather than arrays).
+    if (encoded.startsWith('~')) {
       const innerDecode = makeInnerDecode(
         decodeStringWithEscapes,
         decodeArrayWithoutEscapes,
