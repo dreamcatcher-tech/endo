@@ -1500,8 +1500,7 @@ export const permitted = {
     evaluate: fn,
     globalThis: getter,
     name: getter,
-    // Should this be proposed?
-    toString: fn,
+    '@@toStringTag': 'string',
     import: asyncFn,
     load: asyncFn,
     importNow: fn,

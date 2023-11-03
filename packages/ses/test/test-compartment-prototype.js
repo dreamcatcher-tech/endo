@@ -13,7 +13,9 @@ test('Compartment prototype', t => {
   );
 
   t.deepEqual(
-    Reflect.ownKeys(Compartment.prototype).sort(),
+    Reflect.ownKeys(Compartment.prototype)
+      .filter(key => typeof key !== 'symbol')
+      .sort(),
     [
       'constructor',
       'evaluate',
@@ -23,7 +25,6 @@ test('Compartment prototype', t => {
       'load',
       'module',
       'name',
-      'toString',
     ].sort(),
     'prototype properties',
   );

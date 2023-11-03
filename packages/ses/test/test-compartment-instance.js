@@ -28,11 +28,13 @@ test('Compartment instance', t => {
   );
 
   t.is(c.toString(), '[object Compartment]', 'toString()');
-  t.is(c[Symbol.toStringTag], undefined, '"Symbol.toStringTag" property');
+  t.is(c[Symbol.toStringTag], 'Compartment', '"Symbol.toStringTag" property');
 
   t.deepEqual(Reflect.ownKeys(c), [], 'static properties');
   t.deepEqual(
-    Reflect.ownKeys(Object.getPrototypeOf(c)).sort(),
+    Reflect.ownKeys(Object.getPrototypeOf(c))
+      .filter(key => typeof key !== 'symbol')
+      .sort(),
     [
       'constructor',
       'evaluate',
@@ -42,7 +44,6 @@ test('Compartment instance', t => {
       'load',
       'module',
       'name',
-      'toString',
     ].sort(),
     'prototype properties',
   );

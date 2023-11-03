@@ -8,9 +8,13 @@ import {
   TypeError,
   WeakMap,
   assign,
+  create,
   defineProperties,
   entries,
+  getOwnPropertyDescriptors,
+  objectPrototype,
   promiseThen,
+  toStringTagSymbol,
   weakmapGet,
   weakmapSet,
 } from './commons.js';
@@ -79,7 +83,7 @@ const compartmentImportNow = (compartment, specifier) => {
   return exportsProxy;
 };
 
-export const CompartmentPrototype = {
+const CompartmentPrototypeTemplate = {
   constructor: InertCompartment,
 
   get globalThis() {
@@ -103,10 +107,6 @@ export const CompartmentPrototype = {
   evaluate(source, options = {}) {
     const compartmentFields = weakmapGet(privateFields, this);
     return compartmentEvaluate(compartmentFields, source, options);
-  },
-
-  toString() {
-    return '[object Compartment]';
   },
 
   module(specifier) {
@@ -167,6 +167,22 @@ export const CompartmentPrototype = {
     return compartmentImportNow(/** @type {Compartment} */ (this), specifier);
   },
 };
+
+const CompartmentPrototypeProperties = {
+  ...getOwnPropertyDescriptors(CompartmentPrototypeTemplate),
+
+  [toStringTagSymbol]: {
+    value: 'Compartment',
+    writable: false,
+    configurable: true,
+    enumerable: false,
+  },
+};
+
+export const CompartmentPrototype = create(
+  objectPrototype,
+  CompartmentPrototypeProperties,
+);
 
 defineProperties(InertCompartment, {
   prototype: { value: CompartmentPrototype },
