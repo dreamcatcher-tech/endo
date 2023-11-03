@@ -1,5 +1,12 @@
 User-visible changes in SES:
 
+# Next release
+
+- Exports `ses/lockdown-shim.js`, `ses/compartment-shim.js`, and
+  `ses/assert-shim.js` for piecemeal usage.
+  This change is motivated by the need to omit `ses/assert-shim.js` in Test262
+  environments.
+
 # v0.18.8 (2023-09-11)
 
 - Extracts `repairIntrinsics(options)` and `hardenIntrinsics()` from the
