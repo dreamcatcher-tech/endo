@@ -3,6 +3,7 @@
 import { Far } from '@endo/far';
 import { makeChangeTopic } from './pubsub.js';
 import { makeIteratorRef } from './reader-ref.js';
+import { makeMutex } from './mutex.js';
 
 const { quote: q } = assert;
 
@@ -27,6 +28,7 @@ export const makePetStoreMaker = (filePowers, locator) => {
     const formulaIdentifiers = new Map();
     /** @type {import('./types.js').Topic<unknown>} */
     const changesTopic = makeChangeTopic();
+    const writeLock = makeMutex();
 
     /** @param {string} petName */
     const read = async petName => {
@@ -103,8 +105,11 @@ export const makePetStoreMaker = (filePowers, locator) => {
 
       const petNamePath = filePowers.joinPath(petNameDirectoryPath, petName);
       const petNameText = `${formulaIdentifier}\n`;
-      await filePowers.writeFileText(petNamePath, petNameText);
       changesTopic.publisher.next({ add: petName });
+
+      await writeLock.enqueue(async () => {
+        await filePowers.writeFileText(petNamePath, petNameText);
+      });
     };
 
     const list = () => harden([...petNames.keys()].sort());
@@ -136,7 +141,6 @@ export const makePetStoreMaker = (filePowers, locator) => {
       }
 
       const petNamePath = filePowers.joinPath(petNameDirectoryPath, petName);
-      await filePowers.removePath(petNamePath);
       petNames.delete(petName);
       const formulaPetNames = formulaIdentifiers.get(petName);
       if (formulaPetNames !== undefined) {
@@ -145,6 +149,10 @@ export const makePetStoreMaker = (filePowers, locator) => {
       changesTopic.publisher.next({ remove: petName });
       // TODO consider retaining a backlog of deleted names for recovery
       // TODO consider tracking historical pet names for formulas
+
+      await writeLock.enqueue(async () => {
+        await filePowers.removePath(petNamePath);
+      });
     };
 
     /**
@@ -178,7 +186,6 @@ export const makePetStoreMaker = (filePowers, locator) => {
 
       const fromPath = filePowers.joinPath(petNameDirectoryPath, fromName);
       const toPath = filePowers.joinPath(petNameDirectoryPath, toName);
-      await filePowers.renamePath(fromPath, toPath);
       petNames.set(toName, formulaIdentifier);
       petNames.delete(fromName);
 
@@ -202,6 +209,10 @@ export const makePetStoreMaker = (filePowers, locator) => {
       changesTopic.publisher.next({ add: toName });
       changesTopic.publisher.next({ remove: fromName });
       // TODO consider retaining a backlog of overwritten names for recovery
+
+      await writeLock.enqueue(async () => {
+        await filePowers.renamePath(fromPath, toPath);
+      });
     };
 
     /**
