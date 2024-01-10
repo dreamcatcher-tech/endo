@@ -23,6 +23,9 @@ const { isArray } = Array;
 const { fromEntries, is } = Object;
 const { ownKeys } = Reflect;
 
+// eslint-disable-next-line no-control-regex
+const rC0 = /[\x00-\x1F]/;
+
 /**
  * Assuming that `record` is a CopyRecord, we have only
  * string-named own properties. `recordNames` returns those name *reverse*
@@ -712,7 +715,16 @@ export const makePassableKit = (options = {}) => {
       decodeCompactArray,
       liberalDecoders,
     );
+    /**
+     * @param {string} encoding
+     * @param {string} label
+     * @returns {void}
+     */
     const verifyEncoding = (encoding, label) => {
+      !encoding.match(rC0) ||
+        Fail`internal: ${b(
+          label,
+        )} encoding must not contain a C0 control character: ${encoding}`;
       const decoded = decodeCompactArray(`^s ${encoding} s `, liberalDecode);
       (isArray(decoded) &&
         decoded.length === 3 &&
