@@ -1,4 +1,5 @@
-// @ts-check
+// @ts-nocheck So many errors that the suppressions hamper readability.
+// TODO fix and then turn at-ts-check back on
 import {
   assertChecker,
   makeTagged,

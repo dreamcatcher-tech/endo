@@ -23,6 +23,7 @@ export {};
 /** @typedef {import('@endo/marshal').RankCover} RankCover */
 
 // FIXME exclude nested Error and Promise
+// FIXME exclude nested Taggeds not recognized as Keys
 /**
  * @typedef {import('@endo/pass-style').Passable<RemotableObject, never>} Key
  *
@@ -63,8 +64,9 @@ export {};
  */
 
 // FIXME exclude nested Error and Promise
+// FIXME exclude nested Taggeds not recognized as Keys or Matchers
 /**
- * @typedef {Exclude<Passable, Error | Promise>} Pattern
+ * @typedef {import('@endo/pass-style').Passable<RemotableObject, never>} Pattern
  *
  * Patterns are Passable arbitrarily-nested pass-by-copy containers
  * (CopyArray, CopyRecord, CopySet, CopyBag, CopyMap) in which every
