@@ -1,3 +1,5 @@
+// @ts-nocheck So many errors that the suppressions hamper readability.
+// TODO fix and then turn at-ts-check back on
 /* eslint-disable no-continue */
 import { test } from './prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
